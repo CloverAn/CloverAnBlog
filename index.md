@@ -1,37 +1,118 @@
-## 
+前景：
 
-啊你好esr on GitHub](https://github.com/CloverAn/CloverAnBlog/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```
+目前在idea开发环境中，经常使用动态的yml来实现多环境配置切换。
+目前市面上未检索到能够正常使用的动态获取yml数据源的配置工具类。
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
 
-### Jekyll Themes
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/CloverAn/CloverAnBlog/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+使用场景：
 
-### Support or Contact
+```
+在maven项目下，在主pom.xml文件中，有配置<profiles><profile> </profile></profiles>动态数据源的情况下。
+在需要根据不同环境配置除数据源属性以外的、业务需要的属性和内容的情况下。
+```
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+
+
+工具：
+
+```
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
+import org.springframework.core.io.ClassPathResource;
+import java.util.Properties;
+
+/**
+  * @Description: 动态获取yml多环境配置文件数据
+  * @Author: CloverAn
+  * @Date: 2021/5/17
+  * @Email: CloverAn@aliyun.com
+  */
+public class YmlConfigTool {
+    private static Properties ymlProperties = new Properties();
+
+    static {
+        //1:加载配置文件
+        YamlPropertiesFactoryBean yamlPropertiesFactoryBean = new YamlPropertiesFactoryBean();
+        // 2:将加载的配置文件交给 YamlPropertiesFactoryBean
+        yamlPropertiesFactoryBean.setResources(new ClassPathResource("application.yml"));
+        // 3：将yml转换成 key：val
+        Properties properties = yamlPropertiesFactoryBean.getObject();
+        // 4: 将Properties 通过构造方法交给我们写的工具类
+        yamlPropertiesFactoryBean.setResources(new ClassPathResource("application.yml"), new ClassPathResource(new StringBuilder().append("application-").append(properties.getProperty("spring.profiles.active")).append(".yml").toString()));
+        ymlProperties = yamlPropertiesFactoryBean.getObject();
+    }
+
+    public static Properties getYmlProperties() {
+        return ymlProperties;
+    }
+
+    public static void setYmlProperties(Properties ymlProperties) {
+       YmlConfigTool.ymlProperties = ymlProperties;
+    }
+
+    public static YmlConfigTool create(Properties properties) {
+        return new YmlConfigTool(properties);
+    }
+
+    public YmlConfigTool(Properties properties) {
+        setYmlProperties(properties);
+    }
+
+    public static String getStr(String key) {
+        return ymlProperties.getProperty(key);
+    }
+
+    public static Integer getInt(String key) {
+        return Integer.valueOf(ymlProperties.getProperty(key));
+    }
+
+    public static Boolean getBoolean(String key) {
+        return Boolean.valueOf(ymlProperties.getProperty(key));
+    }
+}
+
+```
+
+
+
+使用：
+
+```
+import org.springframework.stereotype.Component;
+
+/**
+ * @description: yml构造工具类
+ * @author: CloverAn
+ * @Eamil: CloverAn@aliyun.com
+ * @create: 2021-05-17 08:51
+ */
+@Component
+public class YmlConfigToolConstants {
+    public  interface  test{
+        String TEST = YmlConfigTool.getStr("demo.test");
+    }
+}
+
+```
+
+
+
+其他可以操作yml文件的工具：
+
+```
+		<!-- yaml文件操作 -->
+		<dependency>
+			<groupId>org.jyaml</groupId>
+			<artifactId>jyaml</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.19</version>
+		</dependency>
+		<!-- yaml文件操作 -->
+```
+
